@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
+        SONAR_HOST_URL = 'https://sonarcloud.io'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -50,6 +55,26 @@ pipeline {
                     echo "npm audit exit code: $AUDIT_EXIT"
                     echo "Continuing so vulnerabilities remain visible in the Jenkins console."
                     exit 0
+                '''
+            }
+        }
+
+        stage('SonarCloud Analysis') {
+            steps {
+                sh '''
+                    set -e
+
+                    rm -rf sonar-scanner-8.0.1.6346-linux-x64 sonar-scanner.zip
+
+                    curl -fL -o sonar-scanner.zip \
+                      https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-8.0.1.6346-linux-x64.zip
+
+                    unzip -q sonar-scanner.zip
+
+                    export PATH="$WORKSPACE/sonar-scanner-8.0.1.6346-linux-x64/bin:$PATH"
+                    export SONAR_HOST_URL="https://sonarcloud.io"
+
+                    sonar-scanner -X
                 '''
             }
         }
